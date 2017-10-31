@@ -6,6 +6,7 @@ import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 import pylons
 import uuid
+import base64
 from validation import validate_saml
 from metadata import get_certificates, get_federation_metadata, get_wsfed
 from extract import get_user_info
@@ -19,6 +20,7 @@ WSFED_ENDPOINT = ''
 WTREALM = pylons.config['adfs_wtrealm']
 METADATA = get_federation_metadata(pylons.config['adfs_metadata_url'])
 WSFED_ENDPOINT = get_wsfed(METADATA)
+AUTH_URL_TEMPLATE = pylons.config.get('adfs_url_template','{}?wa=wsignin1.0&wreq=xml&wtrealm={}')
 
 
 if not (WSFED_ENDPOINT):
@@ -26,8 +28,11 @@ if not (WSFED_ENDPOINT):
 
 
 def adfs_authentication_endpoint():
-    url_template = '{}?wa=wsignin1.0&wreq=xml&wtrealm={}'
-    return url_template.format(WSFED_ENDPOINT, WTREALM)
+    try:
+        auth_endpoint = AUTH_URL_TEMPLATE.format(WSFED_ENDPOINT, WTREALM)
+    except:
+        auth_endpoint = '{}?wa=wsignin1.0&wreq=xml&wtrealm={}'.format(WSFED_ENDPOINT, WTREALM)
+    return auth_endpoint
 
 
 def is_adfs_user():
@@ -135,7 +140,14 @@ class ADFSRedirectController(toolkit.BaseController):
         """
         Handle eggsmell request from the ADFS redirect_uri.
         """
-        eggsmell = pylons.request.POST['wresult']
+        try:
+            eggsmell = pylons.request.POST.get('wresult')
+            if not eggsmell:
+                request_data = dict(pylons.request.POST)
+                eggsmell = base64.decodestring(request_data['SAMLResponse'])
+        except:
+            log.info('ADFS eggsmell')
+            log.info(dict(pylons.request.POST))
         # We grab the metadata for each login because due to opaque
         # bureaucracy and lack of communication the certificates can be
         # changed. We looked into this and took made the call based upon lack
