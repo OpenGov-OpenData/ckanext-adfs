@@ -37,11 +37,15 @@ def get_federation_metadata(url):
     """
     Grabs the XML from the specified endpoint url.
     """
-    response = requests.get(url)
-    if response.status_code < 400:
-        return response.text.replace(u'\ufeff', '')
+    if url.startswith('/usr/lib/ckan/default/src/'):
+        fh = open('/usr/lib/ckan/default/src/ckanext-adfs/ckanext/adfs/FederationMetadata.xml', 'r')
+        return fh.read().replace(u'\ufeff', '')
     else:
-        raise ValueError('Metadata response: {}'.format(response.status_code))
+        response = requests.get(url)
+        if response.status_code < 400:
+            return response.text.replace(u'\ufeff', '')
+        else:
+            raise ValueError('Metadata response: {}'.format(response.status_code))
 
 
 def get_wsfed(metadata):
