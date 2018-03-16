@@ -5,14 +5,23 @@ import ckan.lib.helpers as h
 import ckan.model as model
 import ckan.plugins.toolkit as toolkit
 import pylons
-import uuid
 import base64
 from validation import validate_saml
-from metadata import get_certificates, get_federation_metadata, get_wsfed
+from metadata import get_certificates, get_federation_metadata
 from extract import get_user_info
+import ckan.lib.base as base
+import ckan.logic as logic
+import ckan.lib.mailer as mailer
+from ckan.common import _, c, request
+from ckan.controllers.user import UserController
 
 
 log = logging.getLogger(__name__)
+render = base.render
+check_access = logic.check_access
+get_action = logic.get_action
+NotFound = logic.NotFound
+NotAuthorized = logic.NotAuthorized
 
 
 class ADFSRedirectController(toolkit.BaseController):
@@ -82,3 +91,63 @@ class ADFSRedirectController(toolkit.BaseController):
 
         toolkit.redirect_to(controller='user', action='dashboard', id=email)
         return
+
+
+class ADFSUserController(UserController):
+    def request_reset(self):
+        context = {'model': model, 'session': model.Session, 'user': c.user,
+                   'auth_user_obj': c.userobj}
+        data_dict = {'id': request.params.get('user')}
+        try:
+            check_access('request_reset', context)
+        except NotAuthorized:
+            abort(403, _('Unauthorized to request reset password.'))
+
+        if request.method == 'POST':
+            id = request.params.get('user')
+
+            context = {'model': model,
+                       'user': c.user}
+
+            data_dict = {'id': id}
+            user_obj = None
+            try:
+                user_dict = get_action('user_show')(context, data_dict)
+                user_obj = context['user_obj']
+            except NotFound:
+                # Try searching the user
+                del data_dict['id']
+                data_dict['q'] = id
+
+                if id and len(id) > 2:
+                    user_list = get_action('user_list')(context, data_dict)
+                    if len(user_list) == 1:
+                        # This is ugly, but we need the user object for the
+                        # mailer,
+                        # and user_list does not return them
+                        del data_dict['q']
+                        data_dict['id'] = user_list[0]['id']
+                        user_dict = get_action('user_show')(context, data_dict)
+                        user_obj = context['user_obj']
+                    elif len(user_list) > 1:
+                        h.flash_error(_('"%s" matched several users') % (id))
+                    else:
+                        h.flash_error(_('No such user: %s') % id)
+                else:
+                    h.flash_error(_('No such user: %s') % id)
+
+            if user_obj:
+                # Don't reset password for ADFS users
+                if user_obj.password is None:
+                    h.flash_error(_('Could not reset password for user: %s') % id)
+                    return render('user/request_reset.html')
+                # Send reset link
+                try:
+                    mailer.send_reset_link(user_obj)
+                    h.flash_success(_('Please check your inbox for '
+                                    'a reset code.'))
+                    h.redirect_to('/')
+                except mailer.MailerException as e:
+                    h.flash_error(_('Could not send reset link: %s') %
+                                  text_type(e))
+        return render('user/request_reset.html')

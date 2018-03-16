@@ -1,21 +1,14 @@
 """
 Plugin for our ADFS
 """
-import logging
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 import pylons
-import uuid
-import base64
-from validation import validate_saml
-from metadata import get_certificates, get_federation_metadata, get_wsfed
-from extract import get_user_info
+from metadata import get_federation_metadata, get_wsfed
 try:
     from ckan.common import config
 except ImportError:
     from pylons import config
-
-log = logging.getLogger(__name__)
 
 
 # Some awful XML munging.
@@ -69,11 +62,16 @@ class ADFSPlugin(plugins.SingletonPlugin):
         :param map: Routes map object
         :returns: Modified version of the map object
         """
-        # Route requests for our WAAD redirect URI to a custom controller.
+        # Route requests for our WAAD redirect URI to a custom controller
         map.connect(
             'adfs_redirect_uri', '/adfs/signin/',
             controller='ckanext.adfs.controller:ADFSRedirectController',
             action='login')
+        # Route password reset requests to a custom controller
+        map.connect(
+            'adfs_request_reset', '/user/reset',
+            controller='ckanext.adfs.controller:ADFSUserController',
+            action='request_reset')
         return map
 
     def after_map(self, map):
