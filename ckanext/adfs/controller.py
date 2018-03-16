@@ -50,14 +50,14 @@ class ADFSRedirectController(toolkit.BaseController):
 
         user = model.User.by_name(username)
         if user:
-            if user.get('state') == 'deleted':
+            if not user.is_active():
                 # Deleted user
                 log.error('Unable to login with ADFS, {} was deleted'.format(username))
                 h.flash_error('This CKAN account was deleted and is no longer accessible.')
                 toolkit.redirect_to(controller='user', action='login')
             else:
                 # Existing user
-                log.info('Logging in from ADFS with user: {}'.format(username))
+                log.info('Logging in from ADFS with username: {}'.format(username))
         else:
             # New user, so create a record for them.
             log.info('Creating user from ADFS, username: {}'.format(username))
