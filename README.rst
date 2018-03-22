@@ -38,6 +38,24 @@ If you merely want to test this extension you can take out a free trial at the
 Azure website (although you'll need to provide credit card details to prove
 you're not a bot).
 
+Installation:
+============
+
+Install the required packages::
+
+    sudo apt-get install libxml2 libxml2-dev libxslt1.1 libxslt1-dev openssl libssl-dev swig python-dev
+
+To install ckanext-adfs for development, activate your CKAN virtualenv and do::
+
+    git clone https://github.com/OpenGov-OpenData/ckanext-adfs.git
+    cd ckanext-adfs
+    git checkout cnra
+    python setup.py develop
+    pip install -r requirements.txt
+
+Add ``adfs`` to the ``ckan.plugins`` setting in your CKAN config file (by default the config file is located at
+``/etc/ckan/default/production.ini``).
+
 Configure:
 =========
 
