@@ -58,6 +58,8 @@ In your CKAN's settings.ini file you need to provide two settings in the
 
 * adfs_metadata_url - a URL pointing to a remote file called `FederationMetadata.xml` containing the ADFS_NAMESPACE and adfs_x509 related values. This URL is in the "Federation Metadata Document URL" value in the "Enable Users to Sign On" section of the Azure website (at current time of writing).
 
+* adfs_url_template - a template snippet for the URL that points to the ADFS authentication endpoint (e.g. {}idpinitiatedsignon.aspx?loginToRp={}). This template uses the wsfed endpoint extracted from FederationMetadata.xml and adfs_wtrealm.
+
 *A WORD OF WARNING* Microsoft appears to change its UI in the Azure website
 quite often so you may need to poke around to find the correct settings. It has
 been our experience that their otherwise excellent documentation doesn't
