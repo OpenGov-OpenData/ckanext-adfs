@@ -3,7 +3,9 @@ Plugin for our ADFS
 """
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
+import ckan.logic.schema
 import pylons
+from ckanext.adfs import schema
 from metadata import get_federation_metadata, get_wsfed
 try:
     from ckan.common import config
@@ -48,6 +50,9 @@ class ADFSPlugin(plugins.SingletonPlugin):
         """
         Add our templates to CKAN's search path
         """
+        ckan.logic.schema.user_new_form_schema = schema.user_new_form_schema
+        ckan.logic.schema.user_edit_form_schema = schema.user_edit_form_schema
+        ckan.logic.schema.default_update_user_schema = schema.default_update_user_schema
         toolkit.add_template_directory(config_, 'templates')
 
     def get_helpers(self):
