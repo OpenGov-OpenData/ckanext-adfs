@@ -2,6 +2,7 @@ import re
 from ckan.common import _
 from ckan.model import PACKAGE_NAME_MAX_LENGTH
 from ckan.lib.navl.dictization_functions import Invalid
+from profanityfilter import ProfanityFilter
 
 
 name_match = re.compile('[a-z0-9_\-]*$')
@@ -55,9 +56,13 @@ def adfs_user_about_validator(key, data, errors, context):
 
 def is_input_valid(input_value):
     invalid_list = ['hacked', 'hacking', 'hacks', 'hack[^a-zA-Z]+', 'malware', 'virus']
+    pf = ProfanityFilter()
+
     for invalid_string in invalid_list:
         if re.search(invalid_string, input_value, re.IGNORECASE):
             return False
+    if not pf.is_clean(input_value):
+        return False
     return True
 
 
