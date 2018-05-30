@@ -25,9 +25,8 @@ def adfs_name_validator(value, context):
                       PACKAGE_NAME_MAX_LENGTH)
 
     # ADFS users can not change their username
-    username = context.get('user')
-    if is_adfs_user(username, context):
-        return username
+    if is_adfs_user(value, context):
+        return value
 
     if not name_match.match(value):
         raise Invalid(_('Must be purely lowercase alphanumeric '
