@@ -186,5 +186,6 @@ class ADFSRedirectController(toolkit.BaseController):
         pylons.session['adfs-user'] = username
         pylons.session['adfs-email'] = email
         pylons.session.save()
-        toolkit.redirect_to(controller='user', action='dashboard', id=email)
+        #toolkit.redirect_to(controller='user', action='dashboard', id=email)
+        toolkit.redirect_to(controller='home', action='index')
         return
