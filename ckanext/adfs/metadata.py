@@ -36,9 +36,12 @@ def get_certificates(metadata):
 def get_federation_metadata(url):
     """
     Grabs the XML from the specified endpoint url.
+
+    This function will check is the url starts with a '/' indicating that it is an
+    absoulte path on the file system.  Otherwise it assumes that it is a URL endpoint.
     """
-    if url.startswith('/usr/lib/ckan/default/src/'):
-        fh = open('/usr/lib/ckan/default/src/ckanext-adfs/ckanext/adfs/FederationMetadata.xml', 'r')
+    if url.startswith('/'):
+        fh = open(url, 'r')
         return fh.read().replace(u'\ufeff', '')
     else:
         response = requests.get(url)
@@ -46,7 +49,6 @@ def get_federation_metadata(url):
             return response.text.replace(u'\ufeff', '')
         else:
             raise ValueError('Metadata response: {}'.format(response.status_code))
-
 
 def get_wsfed(metadata):
     """
