@@ -1,4 +1,4 @@
 lxml
-m2crypto
+m2crypto==0.32.0
 mock
 profanityfilter
