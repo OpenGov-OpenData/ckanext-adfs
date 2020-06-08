@@ -89,8 +89,20 @@ class ADFSRedirectController(toolkit.BaseController):
         pylons.session['adfs-email'] = email
         pylons.session.save()
 
+        environ = toolkit.request.environ
+        rememberer = self._get_rememberer(environ)
+        identity = {'repoze.who.userid': username}
+        headers = rememberer.remember(environ, identity)
+        for header, value in headers:
+            toolkit.response.headers.add(header, value)
+
         toolkit.redirect_to(controller='user', action='dashboard', id=email)
         return
+
+
+    def _get_rememberer(self, environ):
+        plugins = environ.get('repoze.who.plugins', {})
+        return plugins.get('auth_tkt')
 
 
 class ADFSUserController(UserController):

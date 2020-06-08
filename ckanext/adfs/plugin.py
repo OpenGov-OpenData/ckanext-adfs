@@ -94,6 +94,11 @@ class ADFSPlugin(plugins.SingletonPlugin):
         Called to identify the user.
         """
         user = pylons.session.get('adfs-user')
+
+        environ = toolkit.request.environ
+        if user is None and 'repoze.who.identity' in environ:
+            user = environ['repoze.who.identity']['repoze.who.userid']
+
         if user:
             toolkit.c.user = user
 
