@@ -4,7 +4,7 @@ Plugin for our ADFS
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 import ckan.logic.schema
-import pylons
+from ckan.common import session
 from ckanext.adfs import schema
 from metadata import get_federation_metadata, get_wsfed
 try:
@@ -34,7 +34,7 @@ def adfs_authentication_endpoint():
 
 
 def is_adfs_user():
-    return pylons.session.get('adfs-user')
+    return session.get('adfs-user')
 
 
 class ADFSPlugin(plugins.SingletonPlugin):
@@ -93,7 +93,7 @@ class ADFSPlugin(plugins.SingletonPlugin):
         """
         Called to identify the user.
         """
-        user = pylons.session.get('adfs-user')
+        user = session.get('adfs-user')
 
         environ = toolkit.request.environ
         if user is None and 'repoze.who.identity' in environ:
@@ -112,12 +112,12 @@ class ADFSPlugin(plugins.SingletonPlugin):
         """
         Called at logout.
         """
-        keys_to_delete = [key for key in pylons.session
+        keys_to_delete = [key for key in session
                           if key.startswith('adfs')]
         if keys_to_delete:
             for key in keys_to_delete:
-                del pylons.session[key]
-            pylons.session.save()
+                del session[key]
+            session.save()
 
     def abort(self, status_code, detail, headers, comment):
         """
