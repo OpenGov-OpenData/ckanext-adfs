@@ -92,15 +92,13 @@ class ADFSPlugin(plugins.SingletonPlugin):
     def identify(self):
         """
         Called to identify the user.
+        Get user from repoze.who cookie.
         """
-        user = session.get('adfs-user')
-
         environ = toolkit.request.environ
-        if user is None and 'repoze.who.identity' in environ:
+        user = None
+        if 'repoze.who.identity' in environ:
             user = environ['repoze.who.identity']['repoze.who.userid']
-
-        if user:
-            toolkit.c.user = user
+        toolkit.c.user = user
 
     def login(self):
         """
