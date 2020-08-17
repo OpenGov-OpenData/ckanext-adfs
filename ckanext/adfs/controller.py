@@ -4,7 +4,6 @@ import logging
 import ckan.lib.helpers as h
 import ckan.model as model
 import ckan.plugins.toolkit as toolkit
-import pylons
 import base64
 from validation import validate_saml
 from metadata import get_certificates, get_federation_metadata
@@ -12,7 +11,7 @@ from extract import get_user_info
 import ckan.lib.base as base
 import ckan.logic as logic
 import ckan.lib.mailer as mailer
-from ckan.common import _, c, request
+from ckan.common import _, c, request, session
 from ckan.controllers.user import UserController
 
 
@@ -34,19 +33,19 @@ class ADFSRedirectController(toolkit.BaseController):
         Handle eggsmell request from the ADFS redirect_uri.
         """
         try:
-            eggsmell = pylons.request.POST.get('wresult')
+            eggsmell = toolkit.request.POST.get('wresult')
             if not eggsmell:
-                request_data = dict(pylons.request.POST)
+                request_data = dict(toolkit.request.POST)
                 eggsmell = base64.decodestring(request_data['SAMLResponse'])
         except:
             log.info('ADFS eggsmell')
-            log.info(dict(pylons.request.POST))
+            log.info(dict(toolkit.request.POST))
         # We grab the metadata for each login because due to opaque
         # bureaucracy and lack of communication the certificates can be
         # changed. We looked into this and took made the call based upon lack
         # of user problems and tech being under our control vs the (small
         # amount of) latency from a network call per login attempt.
-        metadata = get_federation_metadata(pylons.config['adfs_metadata_url'])
+        metadata = get_federation_metadata(toolkit.config['adfs_metadata_url'])
         x509_certificates = get_certificates(metadata)
         if not validate_saml(eggsmell, x509_certificates):
             raise ValueError('Invalid signature')
@@ -85,9 +84,17 @@ class ADFSRedirectController(toolkit.BaseController):
         model.Session.commit()
         model.Session.remove()
 
-        pylons.session['adfs-user'] = username
-        pylons.session['adfs-email'] = email
-        pylons.session.save()
+        session['adfs-user'] = username
+        session['adfs-email'] = email
+        session.save()
+
+        '''Set the repoze.who cookie to match a given user_id'''
+        if u'repoze.who.plugins' in toolkit.request.environ:
+            rememberer = toolkit.request.environ[u'repoze.who.plugins'][u'friendlyform']
+            identity = {u'repoze.who.userid': username}
+            headers = rememberer.remember(toolkit.request.environ, identity)
+            for header, value in headers:
+                toolkit.response.headers.add(header, value)
 
         toolkit.redirect_to(controller='user', action='dashboard', id=email)
         return
