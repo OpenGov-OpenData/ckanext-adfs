@@ -2,15 +2,20 @@
 
 {% block subtitle %}{{ _('Login') }}{% endblock %}
 
+{% block styles %}
+    {{ super() }}
+    {% resource 'adfs/css/adfs_user.css' %}
+{% endblock %}
+
 {% block primary_content %}
   <section class="module">
     <div class="module-content">
        <h1 class="page-heading">CNRA Sign In</h1>
-        <p>For employees of CNRA, click the CNRA Login button below to
-        sign in with your email account.</p>
-        <p><a class="btn btn-primary" href="{{ h.adfs_authentication_endpoint() }}">CNRA Sign In</a></p>
+        <p>For CNRA staff connected with an enterprise acount only.</p>
+        <p><a class="btn btn-primary" href="{{ h.adfs_authentication_endpoint() }}">CNRA Log In</a></p>
     </div>
   </section>
+  <hr class="module-divider">
   <section class="module">
     <div class="module-content">
       <h2 class="page-heading">External Login</h2>
