@@ -24,8 +24,9 @@
       </section>
       <hr class="module-divider">
       <h1 class="page-heading">
-        {% block page_heading %}{{ _('Register for an Account') }}{% endblock %}
+        {% block page_heading %}{{ _('External Users') }}{% endblock %}
       </h1>
+      <p>Register for an account.</p>
       {{ c.form | safe }}
       {% endblock %}
     </div>
@@ -38,7 +39,7 @@
     {% block help_inner %}
     <h2 class="module-heading">{{ _('Why Sign Up?') }}</h2>
     <div class="module-content">
-      <p>{% trans %}Create datasets, groups and other exciting things{% endtrans %}</p>
+      <p>{% trans %}Follow datasets, organizations, topics, and more!{% endtrans %}</p>
     </div>
     {% endblock %}
   </section>

@@ -9,7 +9,7 @@
 
 {% block primary_content %}
   <section class="module">
-    <div class="module-content">
+    <div class="module-content module-content-adfs">
        <h1 class="page-heading">CNRA Sign In</h1>
         <p>For CNRA staff connected with an enterprise acount only.</p>
         <p><a class="btn btn-primary" href="{{ h.adfs_authentication_endpoint() }}">CNRA Log In</a></p>
@@ -31,9 +31,6 @@
     <section class="module module-narrow module-shallow">
       <h2 class="module-heading">{{ _('Need an Account?') }}</h2>
       <div class="module-content">
-        <p>{% trans %}If you don't work for CNRA, then sign right up,
-        it only takes a minute. (If you <em>do</em> work for CNRA use
-        the CNRA Sign In button.){% endtrans %}</p>
         <p class="action">
           <a class="btn" href="{{ h.url_for(controller='user', action='register') }}">{{ _('Create an Account') }}</a>
         </p>
@@ -42,12 +39,11 @@
   {% endif %}
 
   <section class="module module-narrow module-shallow">
-    <h2 class="module-heading">{{ _('Forgotten your password?') }}</h2>
+    <h2 class="module-heading">{{ _('Forgot Password?') }}</h2>
     <div class="module-content">
-      <p>{% trans %}If you don't work for CNRA, use our password
-      recovery form to reset it.{% endtrans %}</p>
+      <p>{% trans %}For external user accounts only.{% endtrans %}</p>
       <p class="action">
-        <a class="btn" href="{{ h.url_for(controller='user', action='request_reset') }}">{{ _('Forgot your password?') }}</a>
+        <a class="btn" href="{{ h.url_for(controller='user', action='request_reset') }}">{{ _('Request Reset?') }}</a>
       </p>
     </div>
   </section>
