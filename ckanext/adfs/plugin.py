@@ -54,6 +54,7 @@ class ADFSPlugin(plugins.SingletonPlugin):
         ckan.logic.schema.user_edit_form_schema = schema.user_edit_form_schema
         ckan.logic.schema.default_update_user_schema = schema.default_update_user_schema
         toolkit.add_template_directory(config_, 'templates')
+        toolkit.add_resource('fanstatic', 'adfs')
 
     def get_helpers(self):
         return dict(is_adfs_user=is_adfs_user,
