@@ -11,7 +11,7 @@
   <section class="module">
     <div class="module-content">
        <h1 class="page-heading">CNRA Sign In</h1>
-        <p>For CNRA staff connected with an enterprise acount only.</p>
+        <p>For CNRA staff connected with an enterprise account only.</p>
         <p><a class="btn btn-primary" href="{{ h.adfs_authentication_endpoint() }}">CNRA Log In</a></p>
     </div>
   </section>
@@ -43,7 +43,7 @@
     <div class="module-content">
       <p>{% trans %}For external user accounts only.{% endtrans %}</p>
       <p class="action">
-        <a class="btn" href="{{ h.url_for(controller='user', action='request_reset') }}">{{ _('Request Reset?') }}</a>
+        <a class="btn" href="{{ h.url_for(controller='user', action='request_reset') }}">{{ _('Request Reset') }}</a>
       </p>
     </div>
   </section>
