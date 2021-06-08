@@ -2,11 +2,6 @@
 
 {% block subtitle %}{{ _('Login') }}{% endblock %}
 
-{% block styles %}
-    {{ super() }}
-    {% resource 'adfs/css/adfs_user.css' %}
-{% endblock %}
-
 {% block primary_content %}
   <section class="module">
     <div class="module-content">
@@ -15,7 +10,7 @@
         <p><a class="btn btn-primary" href="{{ h.adfs_authentication_endpoint() }}">CNRA Log In</a></p>
     </div>
   </section>
-  <hr class="module-divider">
+  <hr>
   <section class="module">
     <div class="module-content">
       <h2 class="page-heading">External Login</h2>
