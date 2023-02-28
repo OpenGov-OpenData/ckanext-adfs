@@ -11,8 +11,8 @@ from ckan.logic.validators import (
     email_validator
 )
 from ckanext.adfs.validators import (
-    user_password_validator,
-    old_username_validator,
+    adfs_user_password_validator,
+    adfs_old_username_validator,
     adfs_user_name_sanitize
     adfs_name_validator,
     adfs_password_validator,
@@ -27,9 +27,9 @@ def default_user_schema():
     schema = {
         'id': [ignore_missing, unicode_safe],
         'name': [not_empty, adfs_name_validator, user_name_validator,
-                adfs_user_name_sanitize, unicode_safe],
+                 adfs_user_name_sanitize, unicode_safe],
         'fullname': [ignore_missing, unicode_safe],
-        'password': [user_password_validator, user_password_not_empty,
+        'password': [adfs_user_password_validator, user_password_not_empty,
                      ignore_missing, unicode_safe],
         'password_hash': [ignore_missing, ignore_not_sysadmin, unicode_safe],
         'email': [not_empty, unicode_safe, email_validator],
@@ -56,7 +56,7 @@ def user_new_form_schema():
     schema['fullname'] = [ignore_missing, adfs_user_name_sanitize, unicode_safe]
     schema['about'] = [ignore_missing, user_about_validator, unicode_safe]
     schema['password1'] = [unicode_safe, user_both_passwords_entered,
-                           user_password_validator, user_passwords_match]
+                           adfs_user_password_validator, user_passwords_match]
     schema['password2'] = [unicode_safe]
 
     return schema
@@ -66,11 +66,11 @@ def user_edit_form_schema():
     schema = default_user_schema()
 
     schema['name'] = [ignore_missing, adfs_name_validator, user_name_validator,
-                      adfs_user_name_sanitize, old_username_validator, unicode_safe]
+                      adfs_user_name_sanitize, adfs_old_username_validator, unicode_safe]
     schema['fullname'] = [ignore_missing, adfs_user_name_sanitize, unicode_safe]
     schema['about'] = [ignore_missing, user_about_validator, unicode_safe]
     schema['password'] = [ignore_missing]
-    schema['password1'] = [ignore_missing, unicode_safe, user_password_validator,
+    schema['password1'] = [ignore_missing, unicode_safe, adfs_user_password_validator,
                            user_passwords_match, adfs_password_validator]
     schema['password2'] = [ignore_missing, unicode_safe]
 
@@ -82,6 +82,6 @@ def default_update_user_schema():
 
     schema['name'] = [ignore_missing, adfs_name_validator,
                       user_name_validator, unicode_safe]
-    schema['password'] = [ignore_missing, user_password_validator,
+    schema['password'] = [ignore_missing, adfs_user_password_validator,
                           adfs_password_validator, unicode_safe]
     return schema

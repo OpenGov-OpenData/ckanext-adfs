@@ -18,7 +18,7 @@ MIN_LEN_ERROR = (
 )
 
 
-def user_password_validator(key, data, errors, context):
+def adfs_user_password_validator(key, data, errors, context):
     value = data[key]
 
     if isinstance(value, Missing):
@@ -38,9 +38,15 @@ def user_password_validator(key, data, errors, context):
             raise Invalid(_(MIN_LEN_ERROR.format(MIN_PASSWORD_LENGTH, MIN_RULE_SETS)))
 
 
-def old_username_validator(key, data, errors, context):
-    # Completely prevents changing of user names
-    old_user = authz._get_user(context.get('user'))
+def adfs_old_username_validator(key, data, errors, context):
+    # Prevents changing of user names
+    user_id = data.get(('id',))
+    old_user = context['model'].User.get(user_id)
+    new_user_name = data[key]
+    if is_adfs_user(old_user.name, context):
+        raise Invalid(_('Unauthorized to change user name'))
+    if old_user.name != new_user_name and not authz.is_sysadmin(context.get('user')):
+        raise Invalid(_('Unauthorized to change user name'))
     return old_user.name
 
 
@@ -50,14 +56,16 @@ def adfs_user_name_sanitize(key, data, errors, context):
         raise Invalid(_('Input contains invalid text'))
     elif value and re.match('admin', value, re.IGNORECASE):
         raise Invalid(_('Input contains invalid text'))
-    else:
-        pass
+    elif value and re.match('edit', value, re.IGNORECASE):
+        raise Invalid(_('Input contains invalid text'))
+    elif value and re.match('me', value, re.IGNORECASE):
+        raise Invalid(_('Input contains invalid text'))
 
 
 invalid_list = [
-    'activity', 'delete', 'edit', 'follow', 'followers', 'generate_key', 'hack',
-    'login', 'logged_in', 'logged_out', 'logged_out_redirect', 'malware',
-    'manage', 'me', 'register', 'reset', 'root', 'set_lang', 'unfollow', 'virus',
+    'activity', 'delete', 'follow', 'followers', 'generate_key', 'hack',
+    'login', 'logged_in', 'logged_out', 'logged_out_redirect',
+    'malware', 'register', 'reset', 'root', 'set_lang', 'unfollow', 'virus',
     '_logout',
 ]
 def is_input_valid(input_value):
