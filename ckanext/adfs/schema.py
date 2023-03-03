@@ -13,7 +13,7 @@ from ckan.logic.validators import (
 from ckanext.adfs.validators import (
     adfs_user_password_validator,
     adfs_old_username_validator,
-    adfs_user_name_sanitize
+    adfs_user_name_sanitize,
     adfs_name_validator,
     adfs_password_validator,
     json_object
