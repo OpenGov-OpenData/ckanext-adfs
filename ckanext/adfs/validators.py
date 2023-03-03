@@ -43,10 +43,11 @@ def adfs_old_username_validator(key, data, errors, context):
     user_id = data.get(('id',))
     old_user = context['model'].User.get(user_id)
     new_user_name = data[key]
-    if is_adfs_user(old_user.name, context):
-        raise Invalid(_('Unauthorized to change user name'))
-    if old_user.name != new_user_name and not authz.is_sysadmin(context.get('user')):
-        raise Invalid(_('Unauthorized to change user name'))
+    if old_user.name != new_user_name:
+        if is_adfs_user(old_user.name, context):
+            raise Invalid(_('Unauthorized to change user name'))
+        if not authz.is_sysadmin(context.get('user')):
+            raise Invalid(_('Unauthorized to change user name'))
     return old_user.name
 
 
