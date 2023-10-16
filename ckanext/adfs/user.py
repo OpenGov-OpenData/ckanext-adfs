@@ -1,24 +1,12 @@
-import ckan.lib.base as base
-import ckan.model as model
 import ckan.lib.helpers as h
-import ckan.authz as authz
 import ckan.logic as logic
 import ckan.lib.navl.dictization_functions as dictization_functions
 import ckan.lib.authenticator as authenticator
-import ckan.plugins as p
-from plugin import is_adfs_user
+from ckanext.adfs.plugin import is_adfs_user
 
 import ckan.plugins.toolkit as toolkit
-from ckan.common import _, response
-from ckan.controllers.user import UserController
-
-try:
-    # CKAN 2.7 and later
-    from ckan.common import config
-except ImportError:
-    # CKAN 2.6 and earlier
-    from pylons import config
-
+from ckan.common import _
+from ckan.controllers.user import UserController, set_repoze_user, abort
 
 check_access = logic.check_access
 get_action = logic.get_action
@@ -91,11 +79,11 @@ class ADFSUserController(UserController):
             h.redirect_to(controller='user', action='read', id=user['name'])
         except NotAuthorized:
             abort(401, _('Unauthorized to edit user %s') % user_id)
-        except NotFound, e:
+        except NotFound as e:
             abort(404, _('User not found'))
         except DataError:
-            abort(400, _(u'Integrity Error'))
-        except ValidationError, e:
+            abort(400, _('Integrity Error'))
+        except ValidationError as e:
             errors = e.error_dict
             error_summary = e.error_summary
             return self.edit(user_id, data_dict, errors, error_summary)

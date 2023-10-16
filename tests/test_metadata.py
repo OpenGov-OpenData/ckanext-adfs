@@ -26,7 +26,7 @@ class TestValidation(unittest.TestCase):
         """
         We should get two certificates given the content of METADATA.
         """
-        result = get_certificates(METADATA.replace(u'\ufeff', ''))
+        result = get_certificates(METADATA.replace('\ufeff', ''))
         self.assertEqual(2, len(result))
         cert_list = list(result)
         for cert in cert_list:
@@ -65,7 +65,7 @@ class TestValidation(unittest.TestCase):
             url = 'http://my_url.com'
             result = get_federation_metadata(url)
             # There shouldn't be a unicode BOM character
-            self.assertEqual(result, METADATA.replace(u'\ufeff', ''))
+            self.assertEqual(result, METADATA.replace('\ufeff', ''))
             mock_get.assert_called_once_with(url)
 
     def test_get_federation_metadata_server_error(self):
@@ -90,7 +90,7 @@ class TestValidation(unittest.TestCase):
         Given some valid XML expressed as a string the function should return
         a single string that is the WSFED endpoint.
         """
-        result = get_wsfed(METADATA.replace(u'\ufeff', ''))
+        result = get_wsfed(METADATA.replace('\ufeff', ''))
         self.assertEqual('https://login.windows.net/03159e92-72c6-4b23-a64a-af50e790adbf/wsfed', result)
 
     def test_get_wsfed_not_XML(self):

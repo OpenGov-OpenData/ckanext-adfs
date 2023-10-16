@@ -5,15 +5,14 @@ import ckan.lib.helpers as h
 import ckan.model as model
 import ckan.plugins.toolkit as toolkit
 import base64
-from validation import validate_saml
-from metadata import get_certificates, get_federation_metadata
-from extract import get_user_info
+from ckanext.adfs.validation import validate_saml
+from ckanext.adfs.metadata import get_certificates, get_federation_metadata
+from ckanext.adfs.extract import get_user_info
 import ckan.lib.base as base
 import ckan.logic as logic
 import ckan.lib.mailer as mailer
 from ckan.common import _, c, request, session
-from ckan.controllers.user import UserController
-
+from ckan.controllers.user import UserController, abort
 
 log = logging.getLogger(__name__)
 render = base.render
@@ -36,7 +35,7 @@ class ADFSRedirectController(toolkit.BaseController):
             eggsmell = toolkit.request.POST.get('wresult')
             if not eggsmell:
                 request_data = dict(toolkit.request.POST)
-                eggsmell = base64.decodestring(request_data['SAMLResponse'])
+                eggsmell = base64.decodebytes(request_data['SAMLResponse'])
         except:
             log.info('ADFS eggsmell')
             log.info(dict(toolkit.request.POST))
@@ -89,9 +88,9 @@ class ADFSRedirectController(toolkit.BaseController):
         session.save()
 
         '''Set the repoze.who cookie to match a given user_id'''
-        if u'repoze.who.plugins' in toolkit.request.environ:
-            rememberer = toolkit.request.environ[u'repoze.who.plugins'][u'friendlyform']
-            identity = {u'repoze.who.userid': username}
+        if 'repoze.who.plugins' in toolkit.request.environ:
+            rememberer = toolkit.request.environ['repoze.who.plugins']['friendlyform']
+            identity = {'repoze.who.userid': username}
             headers = rememberer.remember(toolkit.request.environ, identity)
             for header, value in headers:
                 toolkit.response.headers.add(header, value)
@@ -156,5 +155,5 @@ class ADFSUserController(UserController):
                     h.redirect_to('/')
                 except mailer.MailerException as e:
                     h.flash_error(_('Could not send reset link: %s') %
-                                  text_type(e))
+                                  str(e))
         return render('user/request_reset.html')

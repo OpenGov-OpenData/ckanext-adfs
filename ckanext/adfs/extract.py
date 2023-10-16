@@ -20,7 +20,6 @@ def get_user_info(saml):
     email = None
     firstname = None
     surname = None
-    username = None
     for attr in attributes:
         if attr.attrib['Name'].endswith('givenname'):
             firstname = attr[0].text
@@ -31,4 +30,4 @@ def get_user_info(saml):
 
     username = email
 
-    return (username, email, firstname, surname)
+    return username, email, firstname, surname

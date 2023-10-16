@@ -2,16 +2,14 @@
 Plugin for our ADFS
 """
 import logging
-import ckan.lib.base as base
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 import uuid
-from validation import validate_saml
-from metadata import get_certificates, get_federation_metadata, get_wsfed
-from extract import get_user_info
-from ckan.config.routing import SubMapper
+from ckanext.adfs.validation import validate_saml
+from ckanext.adfs.metadata import get_certificates, get_federation_metadata, get_wsfed
+from ckanext.adfs.extract import get_user_info
 
-from ckan.common import session, request, response
+from ckan.common import session, request
 from flask import Blueprint
 
 log = logging.getLogger(__name__)
@@ -22,7 +20,7 @@ WSFED_ENDPOINT = ''
 WTREALM = toolkit.config['adfs_wtrealm']
 METADATA = get_federation_metadata(toolkit.config['adfs_metadata_url'])
 WSFED_ENDPOINT = get_wsfed(METADATA)
-AUTH_URL_TEMPLATE = config.get('adfs_url_template','{}?wa=wsignin1.0&wreq=xml&wtrealm={}')
+AUTH_URL_TEMPLATE = toolkit.config.get('adfs_url_template', '{}?wa=wsignin1.0&wreq=xml&wtrealm={}')
 
 if not (WSFED_ENDPOINT):
     raise ValueError('Unable to read WSFED_ENDPOINT values for ADFS plugin.')
@@ -57,8 +55,8 @@ def login():
     except Exception as ex:
         log.error('Missing eggsmell. `wresult` param does not exist.')
         log.error(ex)
-        toolkit.h.flash_error(u'Not able to successfully authenticate.')
-        return toolkit.redirect_to(u'/user/login')
+        toolkit.h.flash_error('Not able to successfully authenticate.')
+        return toolkit.redirect_to('/user/login')
 
     # We grab the metadata for each login because due to opaque
     # bureaucracy and lack of communication the certificates can be
@@ -102,12 +100,12 @@ def login():
     # Log the user in programatically.
     # Reference: ckan/views/user.py
     # By this point we either have a user or created one and they're good to login.
-    resp = toolkit.h.redirect_to(u'user.logged_in')
+    resp = toolkit.h.redirect_to('user.logged_in')
 
     '''Set the repoze.who cookie to match a given user_id'''
-    if u'repoze.who.plugins' in request.environ:
-        rememberer = request.environ[u'repoze.who.plugins'][u'friendlyform']
-        identity = {u'repoze.who.userid': username}
+    if 'repoze.who.plugins' in request.environ:
+        rememberer = request.environ['repoze.who.plugins']['friendlyform']
+        identity = {'repoze.who.userid': username}
         resp.headers.extend(rememberer.remember(request.environ, identity))
 
     return resp
@@ -151,7 +149,7 @@ class ADFSPlugin(plugins.SingletonPlugin):
                If ADFS, we login above and then CKAN will identify user."
         """
         # Must set user to prevent `AttributeError: '_Globals' object has no attribute 'user'`
-        if not getattr(toolkit.c, u'user', None):
+        if not getattr(toolkit.c, 'user', None):
             # Set to none if no user as per CKAN issue #4247.
             # identify_user() also normally tries to set to None
             # but not working as of CKAN 2.8.0.
