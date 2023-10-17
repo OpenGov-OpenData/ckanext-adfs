@@ -64,11 +64,11 @@ class ADFSPlugin(plugins.SingletonPlugin):
 
         schema.update({
             # This is a custom configuration option
-            'login_button_name': [ignore_missing, ignore_not_sysadmin, text_type],
             'login_page_title': [ignore_missing, ignore_not_sysadmin, text_type],
-            'new_page_title': [ignore_missing, ignore_not_sysadmin, text_type],
             'login_page_description': [ignore_missing, ignore_not_sysadmin, text_type],
-            'new_page_description': [ignore_missing, ignore_not_sysadmin, text_type]
+            'login_button_text': [ignore_missing, ignore_not_sysadmin, text_type],
+            'new_user_page_title': [ignore_missing, ignore_not_sysadmin, text_type],
+            'new_user_page_description': [ignore_missing, ignore_not_sysadmin, text_type]
         })
 
         return schema
