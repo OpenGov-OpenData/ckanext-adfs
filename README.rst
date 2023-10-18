@@ -56,10 +56,11 @@ do::
 
     git clone https://github.com/boykoc/ckanext-adfs.git
     cd ckanext-adfs
-    git checkout temp-prod # Note: this is for my version of this repo.
     python setup.py develop
     pip install -r requirements.txt
 
+Add ``adfs`` to the ``ckan.plugins`` setting in your CKAN config file (by default the config file is located at
+``/etc/ckan/default/production.ini``).
 
 ------------
 Configururation
