@@ -2,12 +2,18 @@
 Plugin for our ADFS
 """
 import logging
+import base64
+import uuid
+import ckan.logic as logic
+import ckan.model as model
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
-import uuid
+import ckan.lib.mailer as mailer
 from ckanext.adfs.validation import validate_saml
 from ckanext.adfs.metadata import get_certificates, get_federation_metadata, get_wsfed
 from ckanext.adfs.extract import get_user_info
+from ckanext.adfs import schema as adfs_schema
+from ckan.logic import schema as core_schema
 
 from ckan.common import session, request
 from flask import Blueprint
@@ -42,6 +48,14 @@ def is_adfs_user():
     return session.get('adfs-user')
 
 
+def make_password():
+    """Create a hard to guess password."""
+    out = ''
+    for n in range(8):
+        out += str(uuid.uuid4())
+    return out
+
+
 def login():
     """
     A custom home controller for receiving ADFS authorization responses.
@@ -52,6 +66,9 @@ def login():
     """
     try:
         eggsmell = toolkit.request.form['wresult']
+        if not eggsmell:
+            request_data = dict(toolkit.request.POST)
+            eggsmell = base64.decodebytes(request_data['SAMLResponse'])
     except Exception as ex:
         log.error('Missing eggsmell. `wresult` param does not exist.')
         log.error(ex)
@@ -76,26 +93,35 @@ def login():
 
     user = _get_user(username)
     if user:
-        # Existing user
-        log.info('Logging in from ADFS with user: {}'.format(username))
+        if not user.is_active():
+            # Deleted user
+            log.error('Unable to login with ADFS, {} was deleted'.format(username))
+            toolkit.h.flash_error('This CKAN account was deleted and is no longer accessible.')
+            toolkit.redirect_to(controller='user', action='login')
+        else:
+            # Existing user
+            log.info('Logging in from ADFS with username: {}'.format(username))
     elif toolkit.config.get('adfs_create_user', False):
         # New user, so create a record for them if configuration allows.
-        log.info('Creating user from ADFS')
-        log.info('email: {} firstname: {} surname: {}'.format(email,
-                 firstname.encode('utf8'), surname.encode('utf8')))
-        log.info('Generated username: {}'.format(username))
-        # TODO: Add the new user to the NHSEngland group? Check this!
-        user = toolkit.get_action('user_create')(
-            context={'ignore_auth': True},
-            data_dict={'name': username,
-                       'fullname': firstname + ' ' + surname,
-                       'password': str(uuid.uuid4()),
-                       'email': email})
-    else:
-        log.error('Cannot create new ADFS users. User must already exist due to configuration.')
-        log.error(eggsmell)
-        contact_email = toolkit.config.get('adfs_contact_email', 'your administrator')
-        toolkit.abort(403, "Oops, you don't have access. Please email %s for access." % (contact_email))
+        log.info('Creating user from ADFS, username: {}'.format(username))
+        user = model.User(name=username)
+        user.sysadmin = False
+
+    # Update fullname
+    if firstname and surname:
+        user.fullname = firstname + ' ' + surname
+    # Update mail
+    if email:
+        user.email = email
+
+    # Save the user in the database
+    model.Session.add(user)
+    model.Session.commit()
+    model.Session.remove()
+
+    session['adfs-user'] = username
+    session['adfs-email'] = email
+    session.save()
 
     # Log the user in programatically.
     # Reference: ckan/views/user.py
@@ -109,6 +135,75 @@ def login():
         resp.headers.extend(rememberer.remember(request.environ, identity))
 
     return resp
+
+
+def request_reset():
+    context = {'model': model, 'session': model.Session, 'user': toolkit.c.user,
+                'auth_user_obj': toolkit.c.userobj}
+    data_dict = {'id': request.params.get('user')}
+    try:
+        toolkit.check_access('request_reset', context)
+    except toolkit.NotAuthorized:
+        toolkit.abort(403, toolkit._('Unauthorized to request reset password.'))
+
+    if request.method == 'POST':
+        id = request.params.get('user') or request.form.get('user')
+        if id in (None, u''):
+            toolkit.h.flash_error(toolkit._(u'Email is required'))
+            return toolkit.h.redirect_to(u'/user/reset')
+        context = {'model': model,
+                    'user': toolkit.c.user,
+                    u'ignore_auth': True}
+        user_objs = []
+
+        if u'@' not in id:
+            try:
+                user_dict = toolkit.get_action('user_show')(context, {'id': id})
+                user_objs.append(context['user_obj'])
+            except toolkit.NotFound:
+                pass
+        else:
+            user_list = logic.get_action(u'user_list')(context, {
+                u'email': id
+            })
+            if user_list:
+                # send reset emails for *all* user accounts with this email
+                # (otherwise we'd have to silently fail - we can't tell the
+                # user, as that would reveal the existence of accounts with
+                # this email address)
+                for user_dict in user_list:
+                    logic.get_action(u'user_show')(
+                        context, {u'id': user_dict[u'id']})
+                    user_objs.append(context[u'user_obj'])
+
+        if not user_objs:
+            log.info(u'User requested reset link for unknown user: {}'
+                        .format(id))
+
+        for user_obj in user_objs:
+            # Don't reset password for ADFS users
+            if user_obj.password is None or '@' in user_obj.name:
+                toolkit.h.flash_error(toolkit._('Could not reset password for user: %s') % id)
+                return toolkit.render('user/request_reset.html')
+
+            log.info(u'Emailing reset link to user: {}'
+                        .format(user_obj.name))
+            try:
+                mailer.send_reset_link(user_obj)
+            except mailer.MailerException as e:
+                toolkit.h.flash_error(
+                    toolkit._(u'Error sending the email. Try again later '
+                        'or contact an administrator for help')
+                )
+                log.exception(e)
+                return toolkit.h.redirect_to(u'/')
+        # always tell the user it succeeded, because otherwise we reveal
+        # which accounts exist or not
+        toolkit.h.flash_success(
+            toolkit._(u'A reset link has been emailed to you '
+                '(unless the account specified does not exist)'))
+        return toolkit.h.redirect_to(u'/')
+    return toolkit.render('user/request_reset.html')
 
 
 class ADFSPlugin(plugins.SingletonPlugin):
@@ -126,6 +221,11 @@ class ADFSPlugin(plugins.SingletonPlugin):
         """
         toolkit.add_template_directory(config, 'templates')
 
+        # Monkeypatching user schemas in order to enforce a password policy
+        core_schema.user_new_form_schema = adfs_schema.user_new_form_schema
+        core_schema.user_edit_form_schema = adfs_schema.user_edit_form_schema
+        core_schema.default_update_user_schema = adfs_schema.default_update_user_schema
+
     def get_helpers(self):
         return dict(is_adfs_user=is_adfs_user,
                     adfs_authentication_endpoint=adfs_authentication_endpoint,
@@ -134,7 +234,8 @@ class ADFSPlugin(plugins.SingletonPlugin):
     def get_blueprint(self):
         blueprint = Blueprint('adfs_redirect_uri', self.__module__)
         rules = [
-            ('/adfs/signin/', 'login', login)
+            ('/adfs/signin/', 'login', login),
+            ('/user/reset', 'request_reset', request_reset)
         ]
         for rule in rules:
             blueprint.add_url_rule(*rule, methods=['POST'])
