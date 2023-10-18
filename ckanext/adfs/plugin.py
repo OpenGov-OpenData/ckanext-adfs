@@ -4,17 +4,18 @@ Plugin for our ADFS
 import logging
 import base64
 import uuid
+import ckan.lib.mailer as mailer
+import ckan.lib.navl.dictization_functions as dict_fns
 import ckan.logic as logic
 import ckan.model as model
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
-import ckan.lib.mailer as mailer
+
 from ckanext.adfs.validation import validate_saml
 from ckanext.adfs.metadata import get_certificates, get_federation_metadata, get_wsfed
 from ckanext.adfs.extract import get_user_info
 from ckanext.adfs import schema as adfs_schema
 from ckan.logic import schema as core_schema
-
 from ckan.common import session, request
 from flask import Blueprint
 
@@ -27,6 +28,7 @@ WTREALM = toolkit.config['adfs_wtrealm']
 METADATA = get_federation_metadata(toolkit.config['adfs_metadata_url'])
 WSFED_ENDPOINT = get_wsfed(METADATA)
 AUTH_URL_TEMPLATE = toolkit.config.get('adfs_url_template', '{}?wa=wsignin1.0&wreq=xml&wtrealm={}')
+
 
 if not (WSFED_ENDPOINT):
     raise ValueError('Unable to read WSFED_ENDPOINT values for ADFS plugin.')
@@ -56,6 +58,16 @@ def make_password():
     return out
 
 
+def _parse_form_data(request):
+    return logic.clean_dict(
+        dict_fns.unflatten(
+            logic.tuplize_dict(
+                logic.parse_params(request.form)
+            )
+        )
+    )
+
+
 def login():
     """
     A custom home controller for receiving ADFS authorization responses.
@@ -67,7 +79,7 @@ def login():
     try:
         eggsmell = toolkit.request.form['wresult']
         if not eggsmell:
-            request_data = dict(toolkit.request.POST)
+            request_data = _parse_form_data(toolkit.request)
             eggsmell = base64.decodebytes(request_data['SAMLResponse'])
     except Exception as ex:
         log.error('Missing eggsmell. `wresult` param does not exist.')
@@ -113,6 +125,8 @@ def login():
     # Update mail
     if email:
         user.email = email
+
+    user.password = make_password()
 
     # Save the user in the database
     model.Session.add(user)
@@ -160,7 +174,7 @@ def request_reset():
             try:
                 user_dict = toolkit.get_action('user_show')(context, {'id': id})
                 user_objs.append(context['user_obj'])
-            except toolkit.NotFound:
+            except toolkit.ObjectNotFound:
                 pass
         else:
             user_list = logic.get_action(u'user_list')(context, {
@@ -183,8 +197,12 @@ def request_reset():
         for user_obj in user_objs:
             # Don't reset password for ADFS users
             if user_obj.password is None or '@' in user_obj.name:
-                toolkit.h.flash_error(toolkit._('Could not reset password for user: %s') % id)
-                return toolkit.render('user/request_reset.html')
+                # always tell the user it succeeded, because otherwise we reveal
+                # which accounts are using ADFS
+                toolkit.h.flash_success(
+                    toolkit._(u'A reset link has been emailed to you '
+                        '(unless the account specified does not exist)'))
+                return toolkit.h.redirect_to(u'/')
 
             log.info(u'Emailing reset link to user: {}'
                         .format(user_obj.name))
@@ -245,16 +263,18 @@ class ADFSPlugin(plugins.SingletonPlugin):
     def identify(self):
         """
         Called to identify the user.
-        TODO: Next release of CKAN remove this and set to `pass`.
-              "Nothing to do here, let CKAN handle identifying the user.
-               If ADFS, we login above and then CKAN will identify user."
         """
-        # Must set user to prevent `AttributeError: '_Globals' object has no attribute 'user'`
-        if not getattr(toolkit.c, 'user', None):
-            # Set to none if no user as per CKAN issue #4247.
-            # identify_user() also normally tries to set to None
-            # but not working as of CKAN 2.8.0.
-            toolkit.c.user = None
+        environ = toolkit.request.environ
+        user = None
+        if 'repoze.who.identity' in environ:
+            user = environ['repoze.who.identity']['repoze.who.userid']
+            # In CKAN 2.9.6 '{user_id},1' is stored in session cookie instead of username
+            if toolkit.check_ckan_version(min_version='2.9.6', max_version='2.9.99') and user.endswith(',1'):
+                user_id = user[:-2]
+                user_obj = model.User.get(user_id)
+                if user_obj:
+                    user = user_obj.name
+        toolkit.c.user = user
 
     def login(self):
         """
@@ -268,9 +288,13 @@ class ADFSPlugin(plugins.SingletonPlugin):
     def logout(self):
         """
         Called at logout.
-        Nothing to do here, let repoze.who / CKAN handle logout.
         """
-        pass
+        keys_to_delete = [key for key in session
+                          if key.startswith('adfs')]
+        if keys_to_delete:
+            for key in keys_to_delete:
+                del session[key]
+            session.save()
 
     def abort(self, status_code, detail, headers, comment):
         """
