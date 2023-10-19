@@ -2,8 +2,12 @@
 
 {% block subtitle %}{{ _('Login') }}{% endblock %}
 
+{% block breadcrumb_content %}
+  <li class="active">{{ h.nav_link(_('Login'), controller='user', action='login') }}</li>
+{% endblock %}
+
 {% block primary_content %}
-  <section class="module">
+ <section class="module">
     <div class="module-content">
        <h1 class="page-heading">CNRA Sign In</h1>
         <p>For CNRA staff connected with an enterprise account only.</p>
@@ -12,7 +16,7 @@
   </section>
   <hr>
   <section class="module">
-    <div class="module-content">
+    <div class="module-content external-login">
       <h2 class="page-heading">External Login</h2>
       {% block form %}
         {% snippet "user/snippets/login_form.html", action=c.login_handler, error_summary=error_summary %}
@@ -23,23 +27,35 @@
 
 {% block secondary_content %}
   {% if h.check_access('user_create') %}
+  {% block help_register %}
     <section class="module module-narrow module-shallow">
       <h2 class="module-heading">{{ _('Need an Account?') }}</h2>
+      {% block help_register_inner %}
       <div class="module-content">
         <p class="action">
-          <a class="btn" href="{{ h.url_for(controller='user', action='register') }}">{{ _('Create an Account') }}</a>
+        {% block help_register_button %}
+          <a class="btn btn-default" href="{{ h.url_for(controller='user', action='register') }}">{{ _('Create an Account') }}</a>
+        {% endblock %}
         </p>
       </div>
+    {% endblock %}
     </section>
+  {% endblock %}
   {% endif %}
 
+  {% block help_forgotten %}
   <section class="module module-narrow module-shallow">
+  {% block help_forgotten_inner %}
     <h2 class="module-heading">{{ _('Forgot Password?') }}</h2>
     <div class="module-content">
       <p>{% trans %}For external user accounts only.{% endtrans %}</p>
       <p class="action">
-        <a class="btn" href="{{ h.url_for(controller='user', action='request_reset') }}">{{ _('Request Reset') }}</a>
+        {% block help_forgotten_button %}
+        <a class="btn btn-default" href="{{ h.url_for(controller='user', action='request_reset') }}">{{ _('Request Reset') }}</a>
+        {% endblock %}
       </p>
     </div>
+    {% endblock %}
   </section>
+  {% endblock %}
 {% endblock %}

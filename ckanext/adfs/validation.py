@@ -5,12 +5,8 @@ import logging
 import base64
 import lxml.etree as ET
 from M2Crypto import EVP, X509
-try:
-    # CKAN 2.7 and later
-    from ckan.common import config
-except ImportError:
-    # CKAN 2.6 and earlier
-    from pylons import config
+
+from ckan.common import config
 
 
 MD_ALGORITHM = config.get('adfs_md_algorithm','sha256')
@@ -31,7 +27,7 @@ def verify_signature(signed_info, cert, signature):
     """
     Coordinates the actual verification of the signature.
     """
-    x509 = X509.load_cert_string(base64.decodestring(cert), X509.FORMAT_DER)
+    x509 = X509.load_cert_string(base64.decodebytes(cert), X509.FORMAT_DER)
     pubkey = x509.get_pubkey().get_rsa()
     verify_EVP = EVP.PKey()
     verify_EVP.assign_rsa(pubkey)

@@ -20,7 +20,7 @@ def get_certificates(metadata):
     certificates_set = set()
 
     try:
-        dom = ET.fromstring(str(metadata))
+        dom = ET.fromstring(metadata)
         for child in list(dom):
             service_type = child.attrib.get(type_path, None)
             if service_type == 'fed:ApplicationServiceType' or service_type == 'fed:SecurityTokenServiceType':
@@ -39,7 +39,7 @@ def get_federation_metadata(url):
     """
     response = requests.get(url)
     if response.status_code < 400:
-        return response.text.replace(u'\ufeff', '')
+        return response.content
     else:
         raise ValueError('Metadata response: {}'.format(response.status_code))
 
@@ -52,7 +52,7 @@ def get_wsfed(metadata):
     type_path = '{http://www.w3.org/2001/XMLSchema-instance}type'
     wsfed_path = '{http://docs.oasis-open.org/wsfed/federation/200706}PassiveRequestorEndpoint'
     try:
-        dom = ET.fromstring(str(metadata))
+        dom = ET.fromstring(metadata)
         for child in list(dom):
             service_type = child.attrib.get(type_path, None)
             if service_type == 'fed:ApplicationServiceType':
