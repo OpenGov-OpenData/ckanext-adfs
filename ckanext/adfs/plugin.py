@@ -83,7 +83,7 @@ def login():
             eggsmell = base64.decodebytes(request_data['SAMLResponse'])
     except Exception as ex:
         log.error('Missing eggsmell. `wresult` param does not exist.')
-        log.error(ex)
+        log.exception(ex)
         toolkit.h.flash_error('Not able to successfully authenticate.')
         return toolkit.redirect_to('/user/login')
 
