@@ -29,7 +29,7 @@ def get_certificates(metadata):
         # Do the sensible thing and log what went wrong.
         log.error('UNABLE TO PARSE CERTIFICATE METADATA')
         log.error(metadata)
-        log.error(ex)
+        log.exception(ex)
     return certificates_set
 
 
@@ -63,5 +63,5 @@ def get_wsfed(metadata):
         # Do the sensible thing and log what went wrong.
         log.error('UNABLE TO PARSE WSFED METADATA')
         log.error(metadata)
-        log.error(ex)
+        log.exception(ex)
     return ''
