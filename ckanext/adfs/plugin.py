@@ -83,7 +83,7 @@ def login():
             eggsmell = base64.decodebytes(request_data['SAMLResponse'])
     except Exception as ex:
         log.error('Missing eggsmell. `wresult` param does not exist.')
-        log.error(ex)
+        log.exception(ex)
         toolkit.h.flash_error('Not able to successfully authenticate.')
         return toolkit.redirect_to('/user/login')
 
@@ -103,7 +103,7 @@ def login():
         log.error(eggsmell)
         raise ValueError('No email returned with ADFS')
 
-    user = _get_user(username)
+    user = model.User.by_name(username)
     if user:
         if not user.is_active():
             # Deleted user
@@ -117,6 +117,7 @@ def login():
         # New user, so create a record for them if configuration allows.
         log.info('Creating user from ADFS, username: {}'.format(username))
         user = model.User(name=username)
+        user.password = make_password()
         user.sysadmin = False
 
     # Update fullname
@@ -125,8 +126,6 @@ def login():
     # Update mail
     if email:
         user.email = email
-
-    user.password = make_password()
 
     # Save the user in the database
     model.Session.add(user)
@@ -302,22 +301,6 @@ class ADFSPlugin(plugins.SingletonPlugin):
         to be overridden.
         """
         return (status_code, detail, headers, comment)
-
-
-def _get_user(name):
-    """
-    Return the CKAN user with the given user name, or None.
-    Check state, state: deleted can still login but gets a blank page because
-    CKAN is handling authorization later as well.
-    """
-    try:
-        user = toolkit.get_action('user_show')(data_dict = {'id': name})
-        if user['state'] == 'active':
-            return user
-        else:
-            raise toolkit.ObjectNotFound
-    except toolkit.ObjectNotFound:
-        return None
 
 
 class FileNotFoundException(Exception):

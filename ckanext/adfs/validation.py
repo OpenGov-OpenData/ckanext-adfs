@@ -27,14 +27,14 @@ def verify_signature(signed_info, cert, signature):
     """
     Coordinates the actual verification of the signature.
     """
-    x509 = X509.load_cert_string(base64.decodebytes(cert), X509.FORMAT_DER)
+    x509 = X509.load_cert_string(base64.b64decode(cert), X509.FORMAT_DER)
     pubkey = x509.get_pubkey().get_rsa()
     verify_EVP = EVP.PKey()
     verify_EVP.assign_rsa(pubkey)
     verify_EVP.reset_context(md=MD_ALGORITHM)
     verify_EVP.verify_init()
     verify_EVP.verify_update(signed_info)
-    return verify_EVP.verify_final(signature.decode('base64'))
+    return verify_EVP.verify_final(base64.b64decode(signature))
 
 
 def get_signature(doc):
@@ -99,5 +99,5 @@ def validate_saml(saml, x509_certificates):
         # Log this for later consumption.
         log.error('ADFS validation error')
         log.error(saml)
-        log.error(ex)
+        log.exception(ex)
         return False
