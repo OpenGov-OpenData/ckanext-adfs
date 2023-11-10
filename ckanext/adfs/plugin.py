@@ -80,7 +80,7 @@ def login():
         eggsmell = toolkit.request.form.get('wresult')
         if not eggsmell:
             request_data = _parse_form_data(toolkit.request)
-            eggsmell = base64.decodebytes(request_data['SAMLResponse'])
+            eggsmell = base64.b64decode(request_data['SAMLResponse'])
     except Exception as ex:
         log.error('Missing eggsmell. `wresult` param does not exist.')
         log.exception(ex)
