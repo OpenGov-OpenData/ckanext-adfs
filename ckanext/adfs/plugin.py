@@ -77,7 +77,7 @@ def login():
     Handle eggsmell request from the ADFS redirect_uri.
     """
     try:
-        eggsmell = toolkit.request.form['wresult']
+        eggsmell = toolkit.request.form.get('wresult')
         if not eggsmell:
             request_data = _parse_form_data(toolkit.request)
             eggsmell = base64.decodebytes(request_data['SAMLResponse'])
