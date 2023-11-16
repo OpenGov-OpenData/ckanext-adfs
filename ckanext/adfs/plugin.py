@@ -113,7 +113,7 @@ def login():
         else:
             # Existing user
             log.info('Logging in from ADFS with username: {}'.format(username))
-    elif toolkit.config.get('adfs_create_user', False):
+    elif toolkit.config.get('adfs_create_user', True):
         # New user, so create a record for them if configuration allows.
         log.info('Creating user from ADFS, username: {}'.format(username))
         user = model.User(name=username)
