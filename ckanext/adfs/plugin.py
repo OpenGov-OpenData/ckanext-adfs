@@ -18,27 +18,27 @@ from ckanext.adfs import schema as adfs_schema
 from ckan.logic import schema as core_schema
 from ckan.common import session, request
 from flask import Blueprint
+from functools import lru_cache
 
 log = logging.getLogger(__name__)
-
-
-# Some awful XML munging.
-WSFED_ENDPOINT = ''
-WTREALM = toolkit.config['adfs_wtrealm']
-METADATA = get_federation_metadata(toolkit.config['adfs_metadata_url'])
-WSFED_ENDPOINT = get_wsfed(METADATA)
-AUTH_URL_TEMPLATE = toolkit.config.get('adfs_url_template', '{}?wa=wsignin1.0&wreq=xml&wtrealm={}')
-
-
-if not (WSFED_ENDPOINT):
-    raise ValueError('Unable to read WSFED_ENDPOINT values for ADFS plugin.')
 
 
 def adfs_organization_name():
     return toolkit.config.get('adfs_organization_name', 'our organization')
 
 
+@lru_cache(maxsize=1)
 def adfs_authentication_endpoint():
+    # Some awful XML munging.
+    WSFED_ENDPOINT = ''
+    WTREALM = toolkit.config['adfs_wtrealm']
+    METADATA = get_federation_metadata(toolkit.config['adfs_metadata_url'])
+    WSFED_ENDPOINT = get_wsfed(METADATA)
+    AUTH_URL_TEMPLATE = toolkit.config.get('adfs_url_template', '{}?wa=wsignin1.0&wreq=xml&wtrealm={}')
+
+    if not WSFED_ENDPOINT:
+        log.error('Unable to read WSFED_ENDPOINT values for ADFS plugin.')
+
     try:
         auth_endpoint = AUTH_URL_TEMPLATE.format(WSFED_ENDPOINT, WTREALM)
     except:
