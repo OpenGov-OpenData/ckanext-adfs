@@ -274,6 +274,7 @@ class ADFSPlugin(plugins.SingletonPlugin):
                 if user_obj:
                     user = user_obj.name
         toolkit.c.user = user
+        toolkit.g.user = user
 
     def login(self):
         """
