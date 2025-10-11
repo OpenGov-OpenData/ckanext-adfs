@@ -1,5 +1,5 @@
 ckantoolkit>=0.0.7
 lxml
-m2crypto==0.39.0
+m2crypto==0.45.1
 mock
 profanityfilter
