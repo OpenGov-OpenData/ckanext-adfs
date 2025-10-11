@@ -37,11 +37,15 @@ def get_federation_metadata(url):
     """
     Grabs the XML from the specified endpoint url.
     """
-    response = requests.get(url)
-    if response.status_code < 400:
-        return response.content
-    else:
-        raise ValueError('Metadata response: {}'.format(response.status_code))
+    try:
+        response = requests.get(url, timeout=30)
+        if response.status_code < 400:
+            return response.content
+        else:
+            raise ValueError('Metadata response: {}'.format(response.status_code))
+    except Exception as ex:
+        log.error('Error occurred while getting federation metadata from: {}'.format(url))
+        log.exception(ex)
 
 
 def get_wsfed(metadata):
