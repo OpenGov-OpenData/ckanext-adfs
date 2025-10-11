@@ -31,7 +31,7 @@ AUTH_URL_TEMPLATE = toolkit.config.get('adfs_url_template', '{}?wa=wsignin1.0&wr
 
 
 if not (WSFED_ENDPOINT):
-    raise ValueError('Unable to read WSFED_ENDPOINT values for ADFS plugin.')
+    log.error('Unable to read WSFED_ENDPOINT values for ADFS plugin.')
 
 
 def adfs_organization_name():
